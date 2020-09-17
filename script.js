@@ -1,3 +1,17 @@
+Vue.component('product-details', {
+    props: {
+        details: {
+            type: Array,
+            required: true
+        }
+    },
+    template: `
+    <ul>
+        <li v-for="detail in details">{{ detail }}</li>
+    </ul>
+    `
+})
+
 Vue.component('product', {
     props: {
         premium: {
@@ -15,9 +29,10 @@ Vue.component('product', {
             <p>{{ sale }}</p>
             <p v-if="inStock">In stock</p>
             <p v-else>Out of stock</p>
-            <ul>
-                <li v-for="detail in details">{{ detail }}</li>
-            </ul>
+            <p>Shipping: {{ shipping }}</p>
+
+            <product-details v-bind:details="details"></product-details>
+
             <div v-for="(variant, index) in variants"
                 v-bind:key="variant.variantId"
                 class="color-box"
@@ -28,11 +43,12 @@ Vue.component('product', {
             <button v-on:click="addToCart"
                     v-bind:disabled="!inStock"
                     v-bind:class="{disabledButton: !inStock}">Add to Cart</button><br>
-            <button v-on:click="delFromCart">Delete from Cart</button>
-            <div class="cart">
-                <p>Cart({{cart}})</p>
-            </div>
+            <button @click="removeFromCart">Remove from cart</button>
+
         </div>
+
+        <product-review></product-review>
+
     </div>
     `,
     data() {
@@ -58,16 +74,16 @@ Vue.component('product', {
 
             }
           ],
-        cart: 0,
+
         onSale: false
         }
     },
     methods: {
         addToCart: function(){
-            this.cart += 1
+            this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId)
         },
-        delFromCart: function() {
-            this.cart -= 1
+        removeFromCart: function() {
+            this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId)
         },
         updateProduct: function(index){
             this.selectedVariant = index
@@ -88,14 +104,74 @@ Vue.component('product', {
                 return 'Sale!'
             }
             return '...'
+        },
+        shipping() {
+            if (this.premium) {
+                return "Free"
+            }
+            return "99$"
         }
     }
 })
 
+Vue.component('product-review', {
+    template:`
+    <form class="review-form" >
+
+        <p>
+          <label for="name">Name:</label>
+          <input id="name" v-model="name">
+        </p>
+
+        <p>
+          <label for="review">Review:</label>
+          <textarea id="review" v-model="review"></textarea>
+        </p>
+
+        <p>
+          <label for="rating">Rating:</label>
+          <select id="rating" v-model.number="rating">
+            <option>5</option>
+            <option>4</option>
+            <option>3</option>
+            <option>2</option>
+            <option>1</option>
+          </select>
+        </p>
+
+        <p>
+          <input type="submit" value="Submit">
+        </p>
+
+    </form>
+    `,
+    data() {
+        return {
+            name: null,
+            review: null,
+            rating: null
+        }
+    }
+})
+
+
 let app = new Vue ({
     el: "#app",
     data: {
-        premium: true
+        premium: true,
+        cart: []
+    },
+    methods: {
+        updateCart(id) {
+            this.cart.push(id)
+        },
+        removeItem(id) {
+            for(var i = this.cart.length - 1; i >= 0; i--) {
+                if (this.cart[i] === id) {
+                    this.cart.splice(i, 1);
+                }
+            }
+        }
     }
 
 })
