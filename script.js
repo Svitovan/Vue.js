@@ -1,122 +1,126 @@
-Vue.component('product-details', {
-    props: {
-        details: {
-            type: Array,
-            required: true
-        }
-    },
-    template: `
-    <ul>
-        <li v-for="detail in details">{{ detail }}</li>
-    </ul>
-    `
-})
+//Add a question to the form: “Would you recommend this product”. Then take in that response from the user via radio buttons of “yes” or “no” and add it to the productReview object, with form validation.
 
 Vue.component('product', {
     props: {
-        premium: {
-            type: Boolean,
-            required: true
-        }
+      premium: {
+        type: Boolean,
+        required: true
+      }
     },
     template: `
-    <div class="product">
+     <div class="product">
+
         <div class="product-image">
-            <img v-bind:src="image" alt="Socks">
+          <img :src="image" />
         </div>
+
         <div class="product-info">
-            <h1>{{ title }}</h1>
-            <p>{{ sale }}</p>
-            <p v-if="inStock">In stock</p>
-            <p v-else>Out of stock</p>
+            <h1>{{ product }}</h1>
+            <p v-if="inStock">In Stock</p>
+            <p v-else>Out of Stock</p>
             <p>Shipping: {{ shipping }}</p>
 
-            <product-details v-bind:details="details"></product-details>
+            <ul>
+              <li v-for="detail in details">{{ detail }}</li>
+            </ul>
 
-            <div v-for="(variant, index) in variants"
-                v-bind:key="variant.variantId"
-                class="color-box"
-                v-bind:style="{ backgroundColor: variant.variantColor}"
-                v-on:mouseover="updateProduct(index)">
+            <div class="color-box"
+                 v-for="(variant, index) in variants"
+                 :key="variant.variantId"
+                 :style="{ backgroundColor: variant.variantColor }"
+                 @mouseover="updateProduct(index)"
+                 >
             </div>
-            <!-- <a v-bind:href="link">More products like this</a> -->
+
             <button v-on:click="addToCart"
-                    v-bind:disabled="!inStock"
-                    v-bind:class="{disabledButton: !inStock}">Add to Cart</button><br>
-            <button @click="removeFromCart">Remove from cart</button>
+              :disabled="!inStock"
+              :class="{ disabledButton: !inStock }"
+              >
+            Add to cart
+            </button>
 
-        </div>
+         </div>
 
-        <product-review></product-review>
 
-    </div>
-    `,
+          <div>
+              <p v-if="!reviews.length">There are no reviews yet.</p>
+              <ul v-else>
+                  <li v-for="(review, index) in reviews" :key="index">
+                    <p>{{ review.name }}</p>
+                    <p>Rating:{{ review.rating }}</p>
+                    <p>{{ review.review }}</p>
+                  </li>
+              </ul>
+          </div>
+
+         <product-review @review-submitted="addReview"></product-review>
+
+      </div>
+     `,
     data() {
-        return {
-        brand: 'Vue Mastery',
-        product: 'Socks',
-        selectedVariant: 0,
-        link: 'http://anekdot.ru',
-        details: ['80% cotton', '20% polyester', 'Gender-neutral'],
-        variants: [
+      return {
+          product: 'Socks',
+          brand: 'Vue Mastery',
+          selectedVariant: 0,
+          details: ['80% cotton', '20% polyester', 'Gender-neutral'],
+          variants: [
             {
               variantId: 2234,
-              variantColor: 'Green',
-              variantImage: './img/green-socks.jpg',
-              variantQuantity: 111
-
+              variantColor: 'green',
+              variantImage: 'https://www.vuemastery.com/images/challenges/vmSocks-green-onWhite.jpg',
+              variantQuantity: 10
             },
             {
               variantId: 2235,
-              variantColor: 'Blue',
-              variantImage: './img/blue-socks.jpg',
+              variantColor: 'blue',
+              variantImage: 'https://www.vuemastery.com/images/challenges/vmSocks-blue-onWhite.jpg',
               variantQuantity: 0
-
             }
           ],
-
-        onSale: false
-        }
+          reviews: []
+      }
     },
-    methods: {
-        addToCart: function(){
+      methods: {
+        addToCart() {
             this.$emit('add-to-cart', this.variants[this.selectedVariant].variantId)
         },
-        removeFromCart: function() {
-            this.$emit('remove-from-cart', this.variants[this.selectedVariant].variantId)
-        },
-        updateProduct: function(index){
+        updateProduct(index) {
             this.selectedVariant = index
+        },
+        addReview(productReview) {
+          this.reviews.push(productReview)
         }
-    },
-    computed: {
-        title() {
-            return this.brand + ' ' + this.product
-        },
-        image() {
-            return this.variants[this.selectedVariant].variantImage
-        },
-        inStock() {
-            return this.variants[this.selectedVariant].variantQuantity
-        },
-        sale() {
-            if (this.onSale) {
-                return 'Sale!'
-            }
-            return '...'
-        },
-        shipping() {
+      },
+      computed: {
+          title() {
+              return this.brand + ' ' + this.product
+          },
+          image(){
+              return this.variants[this.selectedVariant].variantImage
+          },
+          inStock(){
+              return this.variants[this.selectedVariant].variantQuantity
+          },
+          shipping() {
             if (this.premium) {
-                return "Free"
+              return "Free"
             }
-            return "99$"
-        }
-    }
-})
+              return 2.99
+          }
+      }
+  })
 
-Vue.component('product-review', {
-    template:`
-    <form class="review-form" >
+
+  Vue.component('product-review', {
+    template: `
+      <form class="review-form" @submit.prevent="onSubmit">
+
+        <p class="error" v-if="errors.length">
+          <b>Please correct the following error(s):</b>
+          <ul>
+            <li v-for="error in errors">{{ error }}</li>
+          </ul>
+        </p>
 
         <p>
           <label for="name">Name:</label>
@@ -146,33 +150,44 @@ Vue.component('product-review', {
     </form>
     `,
     data() {
-        return {
-            name: null,
-            review: null,
-            rating: null
-        }
-    }
-})
-
-
-let app = new Vue ({
-    el: "#app",
-    data: {
-        premium: true,
-        cart: []
+      return {
+        name: null,
+        review: null,
+        rating: null,
+        errors: []
+      }
     },
     methods: {
-        updateCart(id) {
-            this.cart.push(id)
-        },
-        removeItem(id) {
-            for(var i = this.cart.length - 1; i >= 0; i--) {
-                if (this.cart[i] === id) {
-                    this.cart.splice(i, 1);
-                }
-            }
+      onSubmit() {
+        this.errors = []
+        if(this.name && this.review && this.rating) {
+          let productReview = {
+            name: this.name,
+            review: this.review,
+            rating: this.rating
+          }
+          this.$emit('review-submitted', productReview)
+          this.name = null
+          this.review = null
+          this.rating = null
+        } else {
+          if(!this.name) this.errors.push("Name required.")
+          if(!this.review) this.errors.push("Review required.")
+          if(!this.rating) this.errors.push("Rating required.")
         }
+      }
     }
+  })
 
-})
-
+  var app = new Vue({
+      el: '#app',
+      data: {
+        premium: true,
+        cart: []
+      },
+      methods: {
+        updateCart(id) {
+          this.cart.push(id)
+        }
+      }
+  })
